@@ -59,7 +59,7 @@ for idx, query_vec in enumerate(query_vectors):
 
     print(' '.join([rank['entity'] for rank in rankings if rank['ranking'] < LIST_NUM + 1]))
 
-    with open('result_file.txt', 'a') as out:
+    with open('result_file.txt', 'a', encoding='UTF-8') as out:
         for rank in (rank for rank in rankings if rank['ranking'] < SAVE_NUM + 1):
             out.write('\t'.join([
                     query_vec.entity_name,                 # query_ID
