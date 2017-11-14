@@ -14,24 +14,45 @@ def multiply(m1, m2):
 
 
 class CorpusVector(object):
+    """Do some pre-process to the queries and documents and achieve the term list.
+
+    The term list will be achieved while initializing the object.
+    To achieve the term list, steps below are apllied:
+    1. Tokenize using nltk tokenize, the punctuation other than period will be removed.
+    2. The stopwords from nltk corpus will be removed.
+    3. Lowercase the tokens which are not all uppercase.
+
+    The attribute `terms` will be frequently used in latter processes.
+    """
+
+    # Import English stopwords from nltk corpus
     stop = set(stopwords.words('english'))
 
     def __init__(self, entity_name='', text=None):
         self.entity_name = entity_name
         self.text = text.strip('"') if text is not None else ''
-        self.tokens = word_tokenize(self.text)
+
+        # Use nltk.tokenize for tokenizing the text
+        tokens = word_tokenize(self.text)
 
         self.terms = []
-        for token in self.tokens:
+        for token in tokens:
+            # Skip tokens in stopwords
             if token.lower() in self.stop:
                 continue
 
+            # Lowercase the tokens which are not all uppercase
             if token.isupper() or token.islower():
                 self.terms.append(token)
             else:
                 self.terms.append(token.lower())
 
     def get_weights(self, ref_terms, weight_type='', ref_term_counts=[], N=0):
+        """Calculate the weights of referrence terms.
+
+        Both TF-IDF and plain frequency (default) are supported.
+        If using 'tfidf', `ref_term_counts` and `N` should also be set.
+        """
         fs = [self.terms.count(term) for term in ref_terms]
         if weight_type == 'tfidf' and len(ref_terms) == len(ref_term_counts) and N > 0:
             tfs = np.array([1 + math.log2(f) if f > 0 else 0 for f in fs])
@@ -41,6 +62,13 @@ class CorpusVector(object):
             return np.array(fs)
 
 class IndexTermVector(object):
+    """The core of GVSM.
+
+    The main calculating can be done using this class.
+    Each single index term by `i` will be translate into minterm vector space using the method `get_vector()`.
+    """
+
+    # Set the DBdoc_vectors as a static attribute
     DBdoc_vectors = None
 
     def __init__(self, i, index_terms=[], index_term_counts=[], weight_type=''):
@@ -77,14 +105,22 @@ class IndexTermVector(object):
         return numer / denom
 
     def get_on(self, minterm):
+        """The on(i, m_r) function."""
         return minterm[self.i]
 
     def calculate_cdj(self, doc_vector):
-        weights = doc_vector.get_weights(self.index_terms)
+        """The c(dj) function."""
+        weights = doc_vector.get_weights(
+                weight_type='tfidf',
+                ref_terms=self.index_terms,
+                ref_term_counts=self.index_term_counts,
+                N=len(self.DBdoc_vectors)
+            )
         weights[weights != 0] = 1
         return weights
 
     def calculate_cir(self, minterm):
+        """The c(i,m_r) function."""
         index_term = self.index_terms[self.i]
 
         match_docs = []
