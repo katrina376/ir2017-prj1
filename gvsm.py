@@ -4,6 +4,15 @@ import numpy as np
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 
+
+def multiply(m1, m2):
+    """General case of Matrix multiplication."""
+    if m1.size == 1 or m2.size == 1:
+        return m1 * m2
+    else:
+        return np.matmul(m1, m2)
+
+
 class CorpusVector(object):
     stop = set(stopwords.words('english'))
 
