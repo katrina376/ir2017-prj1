@@ -2,6 +2,7 @@ import math
 import numpy as np
 
 from nltk.corpus import stopwords
+from nltk.stem.snowball import SnowballStemmer
 from nltk.tokenize import word_tokenize
 
 
@@ -29,6 +30,10 @@ class CorpusVector(object):
 
     # Import English stopwords from nltk corpus
     stop = set(stopwords.words('english'))
+
+    # Import SnowballStemmer in English from nltk
+    stemmer = SnowballStemmer('english')
+
     punctuations = ['.', ',', '"', '\'', ';', ':', '-', '?', '!', '(', ')']
 
     def __init__(self, entity_name='', text=None):
@@ -52,11 +57,14 @@ class CorpusVector(object):
             if token.lower() in self.stop or token in self.punctuations:
                 continue
 
-            # Lowercase the tokens which are not all uppercase
-            if token.isupper() or token.islower():
-                self.terms.append(token.strip('"').strip('\''))
+            # Strip of quotes
+            token = token.strip('"').strip('\'').strip('(').strip(')')
+
+            # Stem each tokens, exclude those which are apparently abbreviation
+            if token.isupper():
+                self.terms.append(token)
             else:
-                self.terms.append(token.strip('"').strip('\'').lower())
+                self.terms.append(self.stemmer.stem(token))
 
     def get_weights(self, ref_terms, weight_type='', ref_term_counts=[], N=0):
         """Calculate the weights of referrence terms.
