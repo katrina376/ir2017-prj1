@@ -3,7 +3,7 @@ from load import *
 
 import numpy as np
 
-SAVE_NUM = 50
+SAVE_NUM = 1000
 LIST_NUM = 5
 
 RESULT_FILE_NAME = 'result_file.txt'
@@ -90,7 +90,7 @@ for idx, query_vec in enumerate(query_vectors):
     for idx, rank in enumerate(rankings):
         rank['ranking'] = idx + 1
 
-    print('; '.join([rank['entity'] for rank in rankings if rank['ranking'] < LIST_NUM + 1]))
+    print('\t', '; '.join([rank['entity'] for rank in rankings if rank['ranking'] < LIST_NUM + 1]))
 
     # Save the top 50 results
     with open(RESULT_FILE_NAME, 'a', encoding='UTF-8') as out:

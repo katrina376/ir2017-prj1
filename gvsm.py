@@ -18,34 +18,45 @@ class CorpusVector(object):
 
     The term list will be achieved while initializing the object.
     To achieve the term list, steps below are apllied:
-    1. Tokenize using nltk tokenize, the punctuation other than period will be removed.
-    2. The stopwords from nltk corpus will be removed.
-    3. Lowercase the tokens which are not all uppercase.
+    1. Tokenize using nltk tokenize.
+    2. Replace some apostrophe.
+    3. Remove punctuations.
+    4. The stopwords from nltk corpus will be removed.
+    5. Lowercase the tokens which are not all uppercase.
 
     The attribute `terms` will be frequently used in latter processes.
     """
 
     # Import English stopwords from nltk corpus
     stop = set(stopwords.words('english'))
+    punctuations = ['.', ',', '"', '\'', ';', ':', '-', '?', '!', '(', ')']
 
     def __init__(self, entity_name='', text=None):
         self.entity_name = entity_name
         self.text = text.strip('"') if text is not None else ''
+
+        # Replace some apostrophes
+        self.text = self.text.replace('n\'t ', ' not ')
+        self.text = self.text.replace('\'re', ' are ')
+        self.text = self.text.replace('\'m ', ' am ')
+        self.text = self.text.replace('\'ll ', ' will ')
+        self.text = self.text.replace('\'ve ', ' have ')
+        self.text = self.text.replace('\'s', ' is ')
 
         # Use nltk.tokenize for tokenizing the text
         tokens = word_tokenize(self.text)
 
         self.terms = []
         for token in tokens:
-            # Skip tokens in stopwords
-            if token.lower() in self.stop:
+            # Skip tokens in stopwords or punctuations
+            if token.lower() in self.stop or token in self.punctuations:
                 continue
 
             # Lowercase the tokens which are not all uppercase
             if token.isupper() or token.islower():
-                self.terms.append(token)
+                self.terms.append(token.strip('"').strip('\''))
             else:
-                self.terms.append(token.lower())
+                self.terms.append(token.strip('"').strip('\'').lower())
 
     def get_weights(self, ref_terms, weight_type='', ref_term_counts=[], N=0):
         """Calculate the weights of referrence terms.
@@ -56,8 +67,8 @@ class CorpusVector(object):
         fs = [self.terms.count(term) for term in ref_terms]
         if weight_type == 'tfidf' and len(ref_terms) == len(ref_term_counts) and N > 0:
             tfs = np.array([1 + math.log2(f) if f > 0 else 0 for f in fs])
-            idf = np.array([math.log2(N/n) for n in ref_term_counts])
-            return tfs / idf
+            idf = np.array([math.log2(N/n) if n > 0 else 0 for n in ref_term_counts])
+            return tfs * idf
         else:
             return np.array(fs)
 
@@ -102,7 +113,7 @@ class IndexTermVector(object):
         # Calculate the denominator
         denom = sum(self.get_on(self.minterms[r]) * cirs[r]**2 for r in range(len(self.minterms)))**0.5
 
-        return numer / denom
+        return (numer / denom if denom != 0 else numer)
 
     def get_on(self, minterm):
         """The on(i, m_r) function."""
